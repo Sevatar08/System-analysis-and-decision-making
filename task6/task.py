@@ -36,7 +36,7 @@ def task(*args):
     matrix.append(sum)
   matrix = np.matrix(matrix)
   D = np.var(matrix) * rev_count / (rev_count - 1)
-  D_max = experts_count**2*(rev_count ** 3 - rev_count)/12/(rev_count - 1)
+  D_max = experts_count ** 2 *(rev_count ** 3 - rev_count)/12/(rev_count - 1)
   return format(D / D_max, ".2f")
 
 

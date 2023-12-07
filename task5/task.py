@@ -1,7 +1,7 @@
 import json
 import numpy as np
 
-Ranging = list[str | list[str]]
+Ranging = list[str|list[str]]
 
 
 def flatten(values: Ranging) -> list[str]:

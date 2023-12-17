@@ -21,8 +21,7 @@ def parser():
     parser.add_argument('-c', '--column', type=int)
     return parser.parse_args()
 
-if __name__ == "__main__":
-    args = parser()
-    answer = csv(args.filepath, args.row, args.column)
 
-    print(answer)
+args = parser()
+answer = csv(args.filepath, args.row, args.column)
+print(answer)

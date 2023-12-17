@@ -1,25 +1,49 @@
-from io import StringIO
 import csv
+import argparse
 import math
 
-def task3(csvString):
-    f = StringIO(csvString)
-    reader = csv.reader(f, delimiter=',')
-    n = 0
-    r = []
-    for row in reader:
-      r.append([int(ri) for ri in row])
-      n += 1
-    H = 0.0
-    for node in r:
-      prob = []
-      for ri in node:
-        prob.append(ri * 1.0 / (n - 1))
-      node_H = 0.0
-      for p in prob:
-         if (p != 0):
-          node_H += p * math.log(p, 2)
-      H -= node_H
-    return H
+def probability(matrix):
+    prob_matrix = []
+    n = len(matrix)
+    for row in matrix:
+        temp_probs = []
+        for value in row:
+            temp_probs.append(float(value) / (n - 1))
+        prob_matrix.append(temp_probs)
+    return prob_matrix
 
-print(task3("0,1,3,0,0,0,1\n0,0,1,0,0,1,0\n0,0,2,0,0,1,0\n1,0,0,0,1,0,0\n0,0,1,0,0,1,0\n0,1,0,0,0,0,1\n1,0,0,0,1,0,0\n0,1,1,1,0,0,1\n0,0,1,0,0,0,1\n1,0,0,0,1,0,0\n0,0,1,0,0,1,0"))
+def entropy1(prob_matrix):
+    entropies = []
+    for row in prob_matrix:
+        h = 0.0
+        for value in row:
+            if value != 0.0:
+                h += -1 * value * math.log2(value)
+        entropies.append(h)
+    return entropies
+
+def task(matrix):
+    prob_matrix = probability(matrix)
+    entropies = entropy1(prob_matrix)
+    entropy = 0.0
+    for value in entropies:
+        entropy += value
+    return entropy
+
+
+matrix = [
+    [0,1,3,0,0,0,1],
+    [0,0,1,0,0,1,0],
+    [0,0,1,0,0,1,0],
+    [1,0,0,0,1,0,0],
+    [0,0,3,0,0,1,0],
+    [0,1,1,0,0,0,1],
+    [0,1,1,1,0,0,1],
+    [1,0,0,0,1,0,0],
+    [0,0,1,0,0,0,1],
+    [0,0,1,0,0,1,0],
+    [1,0,0,0,1,0,0],
+]
+
+res = task(matrix)
+print(res)

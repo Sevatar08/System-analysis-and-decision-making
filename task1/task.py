@@ -1,11 +1,28 @@
 import csv
+import argparse
 
-print("Введите путь к файлу, оканчивающийся на самом файле.")
-p=input()
-print("Введите номер ряда.")
-l=int(input())
-print("Введите номер колонки.")
-c=int(input())
-with open(p) as f:
-    data=list(csv.reader(f))
-    print(data[l][c])
+def csv(file_path, row, column):
+    counter = 0
+    with open(file_path, 'r') as table:
+        csvreader = csv.reader(table)
+        for rowt in csvreader:
+            if counter == row:
+                try:
+                    return rowt[column]
+                except:
+                    raise Exception('index out of range')
+            counter += 1
+    return None
+
+def parser():
+    parser = argparse.ArgumentParser()
+    parser.add_argument('filepath')
+    parser.add_argument('-r', '--row', type=int)
+    parser.add_argument('-c', '--column', type=int)
+    return parser.parse_args()
+
+if __name__ == "__main__":
+    args = parser()
+    answer = csv(args.filepath, args.row, args.column)
+
+    print(answer)

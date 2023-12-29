@@ -1,78 +1,107 @@
 import json
-import numpy as np
 
-Ranging = list[str|list[str]]
+def read_json(filename):
+    with open(filename, encoding='UTF-8') as f:
+        mass = json.load(f)
+    return mass
 
-
-def flatten(values: Ranging) -> list[str]:
-    flattened_values: list[str] = []
-    for item in values:
-        if isinstance(item, str):
-            flattened_values.append(item)
+def find_places(mass):
+    a = {}
+    for i, cluster in enumerate(mass):
+        if isinstance(cluster, int):
+            a[cluster] = i
         else:
-            flattened_values.extend(item)
-    return sorted(flattened_values, key=lambda x: int(x))
+            for elem in cluster:
+                a[elem] = i
+    return a
+
+def find_place_and_trans(mass):
+    a, trans = {}, {}
+    length = 0
+    for i, cluster in enumerate(mass):
+        if isinstance(cluster, int):
+            a[cluster] = i
+            trans[length] = cluster
+            length += 1
+        else:
+            for elem in cluster:
+                a[elem] = i
+                trans[length] = elem
+                length += 1
+    return a, trans
+
+def create_table(mass, trans=None):
+    if trans is not None:
+        a = find_places(mass)
+    else:
+        a, trans = find_place_and_trans(mass)
+    length = len(trans)
+    table = [[0] * length for _ in range(length)]
+    for i in range(length):
+        for j in range(length):
+            if a[trans[j]] <= a[trans[i]]:
+                table[j][i] = 1
+    return table, trans
 
 
-def is_lower(ranging: Ranging, a: str, b: str) -> bool:
-    for item in ranging:
-        if isinstance(item, str):
-            if a == item:
-                return True
-            if b == item:
-                return False
-            continue
-        if a in item:
-            return b not in item
-        if b in item:
-            return a in item
-    return False
+def find_controversy(t1, t2, trans):
+    t1_transpose = [list(i) for i in zip(*t1)]
+    t2_transpose = [list(i) for i in zip(*t2)]
+    t_mult = [[cell for cell in row] for row in t1]
+    t_mult_transpose = [[cell for cell in row] for row in t1_transpose]
+    kernel = [[0] * len(t1) for _ in range(len(t1))]
+    zeros = set()
+    for i in range(len(t1)):
+        for j in range(len(t1)):
+            t_mult[i][j] *= t2[i][j]
+            t_mult_transpose[i][j] *= t2_transpose[i][j]
+            kernel[i][j] = (t_mult[i][j] or t_mult_transpose[i][j])
+            if not (kernel[i][j] or (j, i) in zeros):
+                zeros.add((i, j))
+    return merge_pairs([[trans[i], trans[j]] for i, j in zeros])
 
 
-def get_matrix(ranging: Ranging) -> np.ndarray:
-    flattened_ranging = flatten(ranging)
-    matrix = np.zeros(shape=(len(flattened_ranging), len(flattened_ranging)), dtype="int64")
-    for i, value_i in enumerate(flattened_ranging):
-        for j, value_j in enumerate(flattened_ranging):
-            if value_i == value_j or not is_lower(ranging, value_i, value_j):
-                matrix[i, j] = 1
-    return matrix
+def merge_pairs(pair_array):
+    merged_arrays = []
+    for pair in pair_array:
+        added = False
+        for merged_array in merged_arrays:
+            if any(element in merged_array for element in pair):
+                merged_array.extend(pair)
+                added = True
+                break
+        if not added:
+            merged_arrays.append(list(pair))
+    return [list(set(i)) for i in merged_arrays]
 
 
-def get_controversy_matrix(matrix_a: np.ndarray, matrix_b: np.ndarray) -> np.ndarray:
-    y_a_b = np.multiply(matrix_a, matrix_b)
-    y_a_b_t = np.multiply(np.transpose(matrix_a), np.transpose(matrix_b))
-    result = np.zeros(matrix_a.shape, dtype="int64")
-    for i in range(len(y_a_b)):
-        for j in range(len(y_a_b[i])):
-            result[i, j] = y_a_b[i, j] or y_a_b_t[i, j]
-    return result
+def make_experts_answer(controversy, trans):
+    visited = set()
+    answer = []
+    for value in trans.values():
+        if value not in visited:
+            new_cluster = set()
+            new_cluster.add(value)
+            visited.add(value)
+            for cluster in controversy:
+                if value in cluster:
+                    new_cluster.update(cluster)
+                    visited.update(cluster)
+            answer.append(list(new_cluster) if len(new_cluster) > 1 else new_cluster.pop())
+    return answer
 
 
-def find_controversy_pairs(matrix: np.ndarray) -> list[tuple[str, str]]:
-    pairs = []
-    for i in range(len(matrix)):
-        for j in range(len(matrix[i])):
-            if i < j:
-                continue
-            if matrix[i, j] == 0:
-                pairs.append((str(j + 1), str(i + 1)))
-    return pairs
+
+def task():
+    a_data = read_json('ranj_b.json')
+    b_data = read_json('ranj_a.json')
+    a, trans = create_table(a_data)
+    b, b_trans = create_table(b_data, trans)
+    controversy = find_controversy(a, b, trans)
+    answer = make_experts_answer(controversy, trans)
+    return answer
 
 
-def compile_ranging(controversy_pairs: list[tuple[str, str]], ranging_a: Ranging, ranging_b: Ranging) -> Ranging:
-    return ["1", "2", "3", "4", "5", "6", "7", ["8", "9"], "10"]
 
-
-def task(a: str, b: str) -> Ranging:
-    ranging_a = get_matrix(json.loads(a))
-    ranging_b = get_matrix(json.loads(b))
-    controversy_matrix = get_controversy_matrix(ranging_a, ranging_b)
-    controversy_pairs = find_controversy_pairs(controversy_matrix)
-    return compile_ranging(controversy_pairs, json.loads(a), json.loads(b))
-
-
-if name == "main":
-    a_input = '["1", ["2", "3"], "4", ["5", "6", "7"], "8", "9", "10"]'
-    b_input = '[["1", "2"],["3","4","5"],"6","7","9",["8", "10"]]'
-    print(task(a_input, b_input))
+ans = task()
+print(ans)
